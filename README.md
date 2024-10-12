@@ -12,7 +12,6 @@ This is a **C++ Circuit Solver** application that allows users to graphically co
 - [Limitations](#limitations)
 - [Future Improvements](#future-improvements)
 - [Contributing](#contributing)
-- [License](#license)
 - [Acknowledgements](#acknowledgements)
 
 ## Features
@@ -174,14 +173,9 @@ Contributions are welcome! Here's how you can help:
 
    Go to the original repository and submit a pull request.
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgements
 
 - **WinBGIm Graphics Library**: For providing the graphics functionality.
-- **Community Contributors**: Thanks to everyone who has contributed to improving this project.
 
 ---
 
