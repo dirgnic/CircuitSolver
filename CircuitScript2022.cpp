@@ -7,257 +7,173 @@
 
 using namespace std;
 
-int n=0, m=0;
+int n=0, m=0; // n: number of nodes, m: number of edges (circuit elements)
 
-void redrawG();
+void redrawG(); // Function to redraw the graphical circuit
 
-float I[100][100], v[100][100], g[100][100], r[100][100];
+// Matrices to store currents (I), voltages (v), graph adjacency (g), and resistances (r)
+float I[100][100], v[100][100], g[100][100], r[100][100]; 
 
-//g - adiac graf, r, v - adiac rezist, tensiune (pe ramuri)
-
-int a[100][100], A[100], finOK =0;
-
-//a - adiac arbore, A - lista elem arbore
+// g: graph adjacency matrix, r: resistance matrix, v: voltage matrix
+int a[100][100], A[100], finOK = 0; 
+// a: adjacency matrix of the tree, A: list of tree elements, finOK: flag to indicate completion
 
 void setgraph()
 {
-
+    // Set up the graphical properties such as text style, colors, etc.
     int font = 10;
-
     int direction = 0;
-
     int font_size = 2;
     settextstyle(font, direction, font_size);
     setcolor(WHITE);
     setfillstyle(LTSLASH_FILL, LIGHTMAGENTA);
     setbkcolor(MAGENTA);
-
 }
 
+// Structure to store matrices for each circuit
 struct matrici
 {
-    int DB[100][100]= {};
-} V[100], TV[100];
+    int DB[100][100]= {}; // Initialize to zero
+} V[100], TV[100]; // V: circuit matrices, TV: temporary matrices
 
-
-
-
-
+// Function to create a tree from the circuit graph
 void creare_arbore()
 {
-    A[0]=1;
+    A[0] = 1; // Root node is set to 1
 
     for(int i=0; i<n; i++)
         for(int j=0; j<n; j++)
         {
+            // Check and build tree using adjacency information
             if(g[i][j]==1 && A[i]==1 && !A[j])
                 a[i][j] = a[j][i] = A[j] = 1;
 
             if(g[i][j]==1 && A[i]==0 && A[j]==1)
                 a[i][j] = a[j][i] = A[i] = 1;
         }
-
-
-/*
-
-    for(int i=0; i<n; i++)
-    {
-        for(int j=0; j<n; j++)
-            cout << a[i][j] << " ";
-        cout << endl;
-    }
-    cout << endl;
-    */
-
 }
 
-int nrC=0, b[100][100], c[100][100];
+// Number of cycles (nrC), b: adjacency matrix of tree + extra edge, c: adjacency matrix graph - tree
+int nrC = 0, b[100][100], c[100][100];
 
-
-// nrC - nr cicluri, b - adiac arbore + muchie separata, c - adiac grafic-arbore (co-arbore)
+// Structure to store circuit cycles
 struct circ
 {
-    int K=0, e[100];
-} q[100];
+    int K=0, e[100]; // K: number of edges, e: edges in cycle
+} q[100]; 
 
+int X[50], p[50]; // X: path, p: flag array for nodes visited in backtracking
 
-
-
-
-int X[50],p[50];
-
+// Function to assign cycles to structures
 void atrib(int n, int p)
 {
- /*   for(int i=0; i<n; i++)
-        cout << X[i]+1;
-    cout << endl;
-    */
-
     for(int i=0; i<n; i++)
-        q[p].e[i]=X[i];
-
-
-    q[p].K = n;
+        q[p].e[i] = X[i];
+    q[p].K = n; // Set the length of the cycle
 }
 
+// Backtracking to find all cycles
 void back(int k, int pas, int P)
 {
     for(int i=0; i<n; i++)
-        if(!p[i] && b[X[pas-1]][i])
+        if(!p[i] && b[X[pas-1]][i]) // Check if the node is unvisited and connected
         {
-            X[pas]=i;
-            p[i]=1;
-            if(X[pas]==k && pas>2) atrib(pas+1, P);
-            else back(k, pas+1, P);
-            p[i]=0;
+            X[pas] = i; // Add the node to the path
+            p[i] = 1; // Mark it as visited
+            if(X[pas]==k && pas>2) atrib(pas+1, P); // Assign cycle if a valid cycle is found
+            else back(k, pas+1, P); // Continue backtracking
+            p[i] = 0; // Unmark the node for next iteration
         }
 }
 
-
+// Initialize matrices for each cycle
 void initBV(int v[], int k)
 {
     for(int i=0; i<n; i++)
     {
         v[i]=0;
         for(int j=0; j<n; j++)
-        {
-            b[i][j]=a[i][j];
-        }
-        for(int i=0; i<q[k].K-1; i++)
-            V[k].DB[q[k].e[i]][q[k].e[i+1]] =  V[k].DB[q[k].e[i+1]][q[k].e[i]] = 1;
+            b[i][j] = a[i][j]; // Copy tree adjacency matrix
 
+        // Mark edges in cycle
+        for(int i=0; i<q[k].K-1; i++)
+            V[k].DB[q[k].e[i]][q[k].e[i+1]] = V[k].DB[q[k].e[i+1]][q[k].e[i]] = 1;
     }
 }
 
+// Function to find all cycles in the circuit
 void creare_cicluri()
 {
     for(int i=0; i<n; i++)
         for(int j=0; j<n; j++)
         {
-            c[i][j]=g[i][j]-a[i][j];
-            b[i][j]=a[i][j];
+            c[i][j] = g[i][j] - a[i][j]; // Co-tree
+            b[i][j] = a[i][j]; // Tree
         }
 
-    int k = 0, v[100]= {0},ok = 1;
+    int k = 0, v[100] = {0};
     for(int i=0; i<n-1; i++)
         for(int j=i+1; j<n; j++)
             if(c[i][j])
             {
-
-                b[i][j]=b[j][i]=1;
-                X[0]=j;
-
-                back(j, 1, k);
-
+                b[i][j] = b[j][i] = 1; // Mark the edge as part of the graph
+                X[0] = j;
+                back(j, 1, k); // Find all cycles starting from this edge
                 initBV(v, k);
-
                 k++;
-
-
             }
-    nrC = k;
-
-    /*
-  for(int i=0; i<nrC; i++)
-    {
-        for(int j=0; j<q[i].K; j++)
-            cout <<  q[i].e[j] +1 << " u";
-        cout << endl;
-    }
-
-*/
-
+    nrC = k; // Set number of cycles
 }
 
-
-
-
+// Adjust the direction of cycles for consistency
 void directieCicluri()
 {
     for(int i=0; i<nrC; i++)
     {
         for(int j=0; j<q[i].K; j++)
         {
-            if(V[i].DB[q[i].e[j+1]][q[i].e[j]]>0)
-                V[i].DB[q[i].e[j]][q[i].e[j+1]]=-V[i].DB[q[i].e[j+1]][q[i].e[j]];
-            else  V[i].DB[q[i].e[j]][q[i].e[j+1]]=-V[i].DB[q[i].e[j+1]][q[i].e[j]];
+            if(V[i].DB[q[i].e[j+1]][q[i].e[j]] > 0)
+                V[i].DB[q[i].e[j]][q[i].e[j+1]] = -V[i].DB[q[i].e[j+1]][q[i].e[j]];
+            else
+                V[i].DB[q[i].e[j]][q[i].e[j+1]] = -V[i].DB[q[i].e[j+1]][q[i].e[j]];
         }
     }
-    /*
-        for(int i=0; i<nrC; i++)
-        {
-            cout << i <<": " << endl;
-            for(int k=0; k<n; k++)
-            {
-                for(int e=0; e<n; e++)
-                 cout << V[i].DB[k][e] << " ";
-              cout << endl;
-            }
-        }
-    */
-
-
 }
 
-float C[100][100]= {};
+// Matrix to store coefficients of cycle equations
+float C[100][100] = {};
 
+// Function to construct the system of equations from the circuit
 void constr_matr()
 {
     for(int i=0; i<nrC; i++)
     {
-
         for(int j=0; j<n; j++)
             for(int k=0; k<n; k++)
             {
-
-                if(V[i].DB[j][k]>0 && r[j][k])
+                if(V[i].DB[j][k] > 0 && r[j][k])
                 {
-                    C[i][i]+=r[j][k];
+                    C[i][i] += r[j][k]; // Diagonal elements
                     for(int q=0; q<nrC; q++)
-                        if(q!=i)
+                        if(q != i)
                         {
-                            if(V[q].DB[j][k]>0)
-                                C[i][q] +=r[j][k];
-                            else if(V[q].DB[j][k]<0)
-                                C[i][q] -=r[j][k];
+                            if(V[q].DB[j][k] > 0)
+                                C[i][q] += r[j][k];
+                            else if(V[q].DB[j][k] < 0)
+                                C[i][q] -= r[j][k];
                         }
                 }
             }
         for(int j=0; j<n; j++)
             for(int k=0; k<n; k++)
             {
-                if(V[i].DB[j][k]>0 && v[j][k])
-                {
-                    C[i][nrC]+=v[j][k];
-                    /*   for(int q=0; q<nrC; q++)
-                           if(q!=i)
-                           {
-                               if(V[q].DB[j][k]>0)
-                                   C[i][nrC] +=v[j][k];
-                               else if(V[q].DB[j][k]<0)
-                                   C[i][nrC] -=v[j][k];
-                           }
-                           */
-
-                }
+                if(V[i].DB[j][k] > 0 && v[j][k])
+                    C[i][nrC] += v[j][k]; // Right-hand side
             }
     }
-/*
-    for(int i=0; i<nrC; i++)
-    {
-        for(int j=0; j<=nrC; j++)
-            cout << C[i][j] << " ";
-        cout << endl;
-    }
-    cout << endl;
-*/
-
 }
-float x[100], ratio;
 
-char If[1000];
-
-float Xi[]= {0.0094416, 0.2096333, 0.04831, 0.029109};
+// Function to calculate currents in the branches using Gaussian elimination
 void calcIntensit()
 {
     for(int i=0; i<n; i++)
@@ -266,128 +182,37 @@ void calcIntensit()
             for(int k=0; k<nrC; k++)
             {
                 if(V[k].DB[i][j] && r[i][j])
-                    I[i][j]+=x[k]*V[k].DB[i][j];
+                    I[i][j] += x[k] * V[k].DB[i][j];
             }
         }
-
-    for(int i=0; i<n; i++)
-    {
-        for(int j=i+1; j<n; j++)
-          if(I[i][j])
-           {     cout << i+1 << " " << j+1 <<" I: " << I[i][j]*1000 << " mA" << endl;
-             redrawG();
-            //  cleardevice();
-             char nr1[10]; itoa(i+1, nr1, 10);
-          //  outtext(nr1);
-
-            char nr2[10]; itoa(j+1, nr2, 10);
-
-            char valVIS[10]; itoa(I[i][j]*1000, valVIS, 10);
-
-            outtextxy(30, 120, "I ");
-            strcat(If, "I ");
-            outtextxy(50, 120, nr1);
-            strcat(If, nr1);
-            outtextxy(70, 120, nr2);
-            strcat(If, nr2);
-            outtextxy(80, 120, " : ");
-            strcat(If, " : ");
-            moveto(100, 120);
-            outtext(valVIS);
-            strcat(If, valVIS);
-            outtextxy(150, 120, " mA ");
-            strcat(If, " mA ; ");
-             delay(1000);
-        //     cleardevice();
-
-           }
-        cout << endl;
-    }
-    cout << endl;
-
 }
-float Vi[100][100];
-char Vf[1000];
+
+// Function to calculate and display voltage in each branch
 void tensiune()
 {
-
     for(int i=0; i<n; i++)
         for(int j=0; j<n; j++)
-            if(r[i][j]) Vi[i][j] = r[i][j]*I[i][j];
-
-    for(int i=0; i<n; i++)
-    {
-        for(int j=i+1; j<n; j++)
-            if(r[i][j])
-            {
-
-            //  cleardevice();
-                cout << i+1 << " " << j+1 <<" V: " << Vi[i][j] << " V" << endl;
-              redrawG();
-
-            char nr1[10]; itoa(i+1, nr1, 10);
-          //  outtext(nr1);
-
-            char nr2[10]; itoa(j+1, nr2, 10);
-
-            char valVIS[10]; itoa((ceil)(Vi[i][j]), valVIS, 10);
-
-           // outtext(nr2);
-
-            outtextxy(30, 120, "V ");
-            strcat(Vf, "V ");
-            outtextxy(50, 120, nr1);
-            strcat(Vf, nr2);
-            outtextxy(70, 120, nr2);
-            strcat(Vf, nr1);
-            outtextxy(80, 120, ": ");
-            strcat(Vf, ": ");
-            moveto(100, 120);
-            outtext(valVIS);
-            strcat(Vf, valVIS);
-            outtextxy(150, 120, " V ");
-            strcat(Vf, " V ; ");
-             delay(1000);
-
-            // cleardevice();
-            }
-        cout << endl;
-    }
-    finOK = 1;
-    cout << endl;
+            if(r[i][j]) 
+                Vi[i][j] = r[i][j] * I[i][j]; // Ohm's law
 }
 
-
+// Solve the system of equations using Gaussian elimination
 void gaussSol()
 {
-
     float t;
-
     for(int j=0; j<nrC; j++)
-    {
         for(int i=0; i<nrC; i++)
-        {
-            if(i!=j)
+            if(i != j)
             {
-                t=C[i][j]/C[j][j];
+                t = C[i][j] / C[j][j];
                 for(int k=0; k<nrC+1; k++)
-                {
-                    C[i][k]=C[i][k]-t*C[j][k];
-                }
+                    C[i][k] -= t * C[j][k];
             }
-        }
-    }
-
     for(int i=0; i<nrC; i++)
-    {
-        x[i]=C[i][nrC]/C[i][i];
-      //  cout<<"x"<<i << "="<<x[i]<<" ";
-    }
-
+        x[i] = C[i][nrC] / C[i][i]; // Solution
 }
 
-
-
+// Initialization function that calls all major steps of the algorithm
 void initAlg()
 {
     creare_arbore();
@@ -397,7 +222,6 @@ void initAlg()
     gaussSol();
     calcIntensit();
     tensiune();
-
 }
 
 
